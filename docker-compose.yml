@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: parcel_nature_postgis
+    environment:
+      POSTGRES_DB: naturedb
+      POSTGRES_USER: nature
+      POSTGRES_PASSWORD: nature
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./sql/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
+      - ./sql/002_schema.sql:/docker-entrypoint-initdb.d/002_schema.sql
+      - ./sql/003_indexes.sql:/docker-entrypoint-initdb.d/003_indexes.sql
+      - ./sql/004_forest_stand_features.sql:/docker-entrypoint-initdb.d/004_forest_stand_features.sql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: parcel_nature_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  postgis_data:
