@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 
 from nature_screening.analysis.analysis import analyze_parcel
 from nature_screening.analysis.parcel_lookup import get_parcel_by_property_id
-from nature_screening.etl.ensure_coverage import ensure_forest_stand_coverage
+from nature_screening.etl.ensure_coverage import ensure_forest_stand_coverage, ensure_parcel_exists
 
 app = FastAPI(title="Parcel Nature Screening API")
 
@@ -24,6 +24,8 @@ def get_parcel(property_id: str):
 
 @app.get("/parcels/{property_id}/analysis")
 def get_parcel_analysis(property_id: str):
+    ensure_parcel_exists(property_id)
+
     parcel = get_parcel_by_property_id(property_id)
 
     if parcel is None:

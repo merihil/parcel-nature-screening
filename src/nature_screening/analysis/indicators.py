@@ -87,10 +87,54 @@ def get_nearest_natura_distance(property_id: str) -> dict:
     }
 
 
+def get_forest_stand_summary(property_id: str) -> dict:
+    """
+    Summarize forest stand attributes across all stands intersecting a parcel.
+
+    Uses MAX/BOOL_OR rather than area-weighted aggregation: this reports
+    whether the parcel contains *any* stand meeting each condition, not a
+    weighted average across its area.
+    """
+
+    query = text("""
+        SELECT
+            MAX(fs.mean_age) AS max_mean_age,
+            BOOL_OR(fs.drainage_state = 6) AS has_natural_mire,
+            BOOL_OR(fs.development_class = 'ER') AS has_uneven_aged_structure,
+            BOOL_OR(fs.special_feature IS NOT NULL) AS has_special_feature
+        FROM core.parcels p
+        JOIN core.forest_stand_features fs
+        ON ST_Intersects(p.geom, fs.geom)
+        WHERE p.property_id = :property_id
+        """)
+
+    engine = get_engine()
+
+    with engine.connect() as connection:
+        result = (
+            connection.execute(
+                query,
+                {"property_id": property_id},
+            )
+            .mappings()
+            .first()
+        )
+
+    return {
+        "max_mean_age": (
+            int(result["max_mean_age"]) if result["max_mean_age"] is not None else None
+        ),
+        "has_natural_mire": bool(result["has_natural_mire"]),
+        "has_uneven_aged_structure": bool(result["has_uneven_aged_structure"]),
+        "has_special_feature": bool(result["has_special_feature"]),
+    }
+
+
 def calculate_indicators(property_id: str) -> dict:
     indicators = {}
 
     indicators.update(get_natura_overlap(property_id))
     indicators.update(get_nearest_natura_distance(property_id))
+    indicators.update(get_forest_stand_summary(property_id))
 
     return indicators

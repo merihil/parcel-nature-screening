@@ -14,6 +14,7 @@ services:
       - ./sql/002_schema.sql:/docker-entrypoint-initdb.d/002_schema.sql
       - ./sql/003_indexes.sql:/docker-entrypoint-initdb.d/003_indexes.sql
       - ./sql/004_forest_stand_features.sql:/docker-entrypoint-initdb.d/004_forest_stand_features.sql
+      - ./sql/005_forest_stand_fetch_log.sql:/docker-entrypoint-initdb.d/005_forest_stand_fetch_log.sql
 
   pgadmin:
     image: dpage/pgadmin4

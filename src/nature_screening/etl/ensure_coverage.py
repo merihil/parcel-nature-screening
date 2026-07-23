@@ -1,49 +1,52 @@
 from sqlalchemy import text
 
 from nature_screening.db.connection import get_engine
-from nature_screening.etl.import_forest_stands import (
-    SOURCE_NAME,
-    import_forest_stand_data_from_wfs,
-)
+from nature_screening.db.queries import get_parcel_geometry
+from nature_screening.etl.import_forest_stands import import_forest_stand_data_from_wfs
+from nature_screening.etl.import_parcels import import_parcels
 from nature_screening.geo.aoi import DEFAULT_BUFFER_M, resolve_aoi
 
 
-def has_forest_stand_coverage(bbox: tuple[float, float, float, float]) -> bool:
-    minx, miny, maxx, maxy = bbox
+def ensure_parcel_exists(property_id: str) -> None:
+    if get_parcel_geometry(property_id) is not None:
+        return
 
+    import_parcels(property_id=property_id)
+
+
+def has_forest_stand_coverage(property_id: str) -> bool:
     query = text("""
         SELECT EXISTS (
-            SELECT 1
-            FROM core.forest_stand_features
-            WHERE source_name = :source_name
-            AND ST_Intersects(geom, ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, 3067))
+            SELECT 1 FROM core.forest_stand_fetch_log WHERE property_id = :property_id
         )
         """)
 
     engine = get_engine()
 
     with engine.connect() as connection:
-        return bool(
-            connection.execute(
-                query,
-                {
-                    "source_name": SOURCE_NAME,
-                    "minx": minx,
-                    "miny": miny,
-                    "maxx": maxx,
-                    "maxy": maxy,
-                },
-            ).scalar()
-        )
+        return bool(connection.execute(query, {"property_id": property_id}).scalar())
+
+
+def mark_forest_stand_fetched(property_id: str) -> None:
+    query = text("""
+        INSERT INTO core.forest_stand_fetch_log (property_id, fetched_at)
+        VALUES (:property_id, now())
+        ON CONFLICT (property_id) DO UPDATE SET fetched_at = EXCLUDED.fetched_at
+        """)
+
+    engine = get_engine()
+
+    with engine.begin() as connection:
+        connection.execute(query, {"property_id": property_id})
 
 
 def ensure_forest_stand_coverage(
     property_id: str,
     buffer_m: float = DEFAULT_BUFFER_M,
 ) -> None:
-    aoi = resolve_aoi(property_id=property_id, buffer_m=buffer_m)
-
-    if has_forest_stand_coverage(aoi.bbox):
+    if has_forest_stand_coverage(property_id):
         return
 
+    aoi = resolve_aoi(property_id=property_id, buffer_m=buffer_m)
     import_forest_stand_data_from_wfs(replace=False, bbox=aoi.bbox)
+    mark_forest_stand_fetched(property_id)

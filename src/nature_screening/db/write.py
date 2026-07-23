@@ -30,6 +30,7 @@ def upsert_gdf_to_postgis(
     table: str,
     conflict_columns: list[str],
     schema: str = "core",
+    batch_size: int = 500,
 ) -> int:
     if gdf.empty:
         return 0
@@ -52,14 +53,21 @@ def upsert_gdf_to_postgis(
     metadata = MetaData(schema=schema)
     reflected_table = Table(table, metadata, autoload_with=engine)
 
-    statement = pg_insert(reflected_table).values(records)
-    statement = statement.on_conflict_do_update(
-        index_elements=conflict_columns,
-        set_={col: getattr(statement.excluded, col) for col in update_columns},
-    )
-
+    # Postgres allows at most 65535 bind parameters per statement. A single
+    # INSERT with every row inline can exceed that for large fetches (a wide
+    # table times a few thousand rows adds up fast), so this batches instead
+    # of sending everything as one statement.
     with engine.begin() as connection:
-        connection.execute(statement)
+        for start in range(0, len(records), batch_size):
+            batch = records[start : start + batch_size]
+
+            statement = pg_insert(reflected_table).values(batch)
+            statement = statement.on_conflict_do_update(
+                index_elements=conflict_columns,
+                set_={col: getattr(statement.excluded, col) for col in update_columns},
+            )
+
+            connection.execute(statement)
 
     return len(records)
 

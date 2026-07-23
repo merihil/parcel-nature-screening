@@ -44,3 +44,12 @@ still the right thing to send to a WFS server underneath, but it's a poor way fo
 the API) to say "the area around this parcel." So `geo/aoi.py` resolves either an explicit bbox
 or one derived from a parcel's buffered geometry, and every caller (CLI scripts and the API)
 goes through the same resolver instead of each one inventing its own notion of "the area."
+
+### Why does `upsert_gdf_to_postgis` write in batches instead of one INSERT?
+
+Found this by actually testing with a large parcel, not by reasoning about it in advance: a
+single INSERT with every fetched row inlined works fine for a small AOI, but Postgres rejects
+any statement with more than 65535 bind parameters. A wide table (15 columns here) times a few
+thousand rows blows past that easily for a big parcel's buffered area. The fix is chunking the
+rows into fixed-size batches inside one transaction — same end result, no risk of hitting the
+limit regardless of how many rows a fetch returns.

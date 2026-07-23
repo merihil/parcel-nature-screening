@@ -74,7 +74,8 @@ def import_forest_stand_data_from_wfs(
     )
 
     if gdf.empty:
-        raise RuntimeError("No features returned for Forest Stand")
+        print("No Forest Stand features found for this area — nothing to import.")
+        return
 
     forest_stand = normalize_forest_stand_gdf(gdf)
 
