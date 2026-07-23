@@ -1,6 +1,6 @@
 # Parcel Nature Screening
 
-A GIS backend that evaluates environmental constraints for cadastral parcels in Finland by
+A GIS backend that evaluates environmental conservation value for cadastral parcels in Finland by
 combining several spatial datasets — Natura 2000 protected areas, forest stand data, and
 cadastral parcel boundaries — into a single biodiversity-potential screening result.
 
