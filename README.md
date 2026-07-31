@@ -7,8 +7,8 @@ biodiversity-potential screening result.
 Given a parcel's property id, the API returns a preliminary score and the spatial evidence
 behind it like Natura 2000 overlap, distance to the nearest protected site, plus forest stand indicators 
 (old-growth forest age, natural undrained mire, uneven-aged stand structure, and flagged
-special habitat features), with more indicators planned. It is a learning/portfolio                            
-project, not an official conservation assessment tool. 
+special habitat features), with more indicators planned. It is a learning/portfolio project, not an official
+conservation assessment tool. 
 
 ## Tech stack
 
