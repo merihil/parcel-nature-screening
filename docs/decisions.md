@@ -32,7 +32,7 @@ ETL processes or on-demand when data is missing.
 
 **Problem**
 
-The end goal is to screen any cadastral parcel in Finland by `property_id`, but national-scale
+The end goal is to screen any cadastral parcel in Finland by property_id, but national-scale
 datasets like forest stand polygons (millions of features) are far too large to import
 wholesale into PostGIS. Importing "one municipality at a time" by hand doesn't generalize to
 "any parcel in Finland" without a rewrite, unless the acquisition pattern is designed for that
@@ -40,43 +40,36 @@ from the start.
 
 **Decision**
 
-Introduce an AOI abstraction (`geo/aoi.py`) that resolves either an explicit bounding box or a
-bounding box derived from a parcel's buffered geometry (`property_id` → geometry lookup in
-`core.parcels` → buffer → bbox). ETL importers and the API both go through this same resolver.
-The API (`/parcels/{property_id}/analysis`) calls `ensure_forest_stand_coverage` before running
+Use an AOI abstraction that resolves either an explicit bounding box or a
+bounding box derived from a parcel's buffered geometry. ETL importers and the API both go through this same resolver. The API calls `ensure_forest_stand_coverage` before running
 analysis: if the AOI isn't already covered by previously fetched data, it triggers the same
 fetch pipeline the CLI uses, on demand.
 
 Because AOIs for different parcels can overlap, the same source feature can be fetched more
-than once. Writes for AOI-scoped data therefore use `upsert_gdf_to_postgis`
-(`INSERT ... ON CONFLICT (source_name, source_identifier) DO UPDATE`) instead of a plain
+than once. Writes for AOI-scoped data therefore use `upsert_gdf_to_postgis` instead of a plain
 append, backed by a unique index on `(source_name, source_identifier)`.
 
 **Alternatives considered**
 
 - Keep the acquisition flow bbox-only, manually run per municipality, and rewrite it later for
-  per-parcel use — rejected because the final and MVP versions would then be different systems
+  per-parcel use. Rejected because the final and MVP versions would then be different systems
   rather than the same pipeline exercised at different scales.
-- Import all forest stand data nationwide up front, same as Natura 2000 — rejected due to
-  dataset size (millions of features vs. a few thousand for Natura 2000).
+- Import all forest stand data nationwide up front, same as Natura 2000. Rejected due to
+  dataset size.
 - Keep plain-append writes and rely on a "do we already have this AOI" check to avoid
-  duplicates — rejected because any partial bbox overlap between two AOI fetches can still
+  duplicates. Rejected because any partial bbox overlap between two AOI fetches can still
   re-request the same feature; only a uniqueness constraint at the write layer guarantees no
   duplicates regardless of how precise the coverage check is.
 
 **Why this solution**
 
 - The same code path serves both a manually-run single-municipality import and an
-  automatic per-parcel fetch triggered by the API — no separate "MVP" and "final" systems.
-- Idempotent writes make repeated/overlapping fetches safe by construction, not by convention.
-- Small, bounded national datasets (Natura 2000) are deliberately exempt from AOI scoping — see
-  `data_sources.md` and `etl_pipelines.md` for which pipelines use which strategy.
+  automatic per-parcel fetch triggered by the API.
+- Idempotent writes make overlapping fetches safe
+- Small, bounded national datasets (Natura 2000) are deliberately exempt from AOI scoping.
 
 **Known limitations, not yet addressed**
 
-- Coverage checking is a simple "does any data already intersect this bbox" query, not true
-  extent tracking — a previous fetch that only partially overlaps a new AOI can still leave
-  gaps.
 - The on-demand fetch runs synchronously inside the API request. The first request for a new
   area can take several seconds to tens of seconds (WFS pagination + write), and a WFS failure
   surfaces as a raw 500.
