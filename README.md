@@ -1,12 +1,14 @@
 # Parcel Nature Screening
 
-A GIS backend that evaluates environmental conservation value for cadastral parcels in Finland by
-combining several spatial datasets — Natura 2000 protected areas, forest stand data, and
-cadastral parcel boundaries — into a single biodiversity-potential screening result.
+A GIS backend that evaluates environmental conservation value for cadastral parcels in Finland by combining several
+spatial datasets, Natura 2000 protected areas, forest stand data, and cadastral parcel boundaries into a single
+biodiversity-potential screening result.
 
-Given a parcel's `property_id`, the API returns a preliminary score and the spatial evidence
-behind it (Natura 2000 overlap, distance to the nearest protected site, and more indicators
-planned). It is a learning/portfolio project, not an official conservation assessment tool.
+Given a parcel's property id, the API returns a preliminary score and the spatial evidence
+behind it like Natura 2000 overlap, distance to the nearest protected site, plus forest stand indicators 
+(old-growth forest age, natural undrained mire, uneven-aged stand structure, and flagged
+special habitat features), with more indicators planned. It is a learning/portfolio                            
+project, not an official conservation assessment tool. 
 
 ## Tech stack
 
@@ -50,8 +52,9 @@ Why things are structured this way, including tradeoffs considered: [`docs/decis
 cp .env.example .env
 ```
 
-Fill in `.env` with your own values — a database password for local use, and API
-credentials/endpoints for MML, SYKE and Metsäkeskus (see comments in `.env.example` for where to
+Fill in `.env` with your own values:
+- a database password for local use
+- API credentials/endpoints for MML, SYKE and Metsäkeskus (see comments in `.env.example` for where to
 request access).
 
 ### 3. Start PostGIS
@@ -60,9 +63,10 @@ request access).
 docker compose up -d
 ```
 
-This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/004` on first
-run (fresh database volume only — see below if you're applying a new migration to an existing
-database).
+This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/005` on first
+run (fresh database volume only)
+-> see below if you're applying a new migration to an existing
+database
 
 ### 4. Install the package
 
@@ -89,7 +93,7 @@ python -m nature_screening.etl.import_parcels --property-id 091-403-0063-0091
 python -m nature_screening.etl.import_nature_features
 ```
 
-Forest stand data doesn't need a separate manual import — it's fetched automatically, scoped to
+Forest stand data doesn't need a separate manual import. It's fetched automatically, scoped to
 the parcel being screened, the first time it's requested through the API (see
 [`docs/etl_pipelines.md`](docs/etl_pipelines.md)).
 
