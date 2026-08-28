@@ -2,6 +2,20 @@
 
 What external datasets this project uses, where they come from, and what they contain.
 
+## Cadastral parcels
+
+**Source:** National Land Survey of Finland / MML  
+**Use in project:** User input and main analysis unit  
+**Target table:** `core.parcels`  
+**Key fields:**
+- `property_id`
+- `municipality_code`
+- `area_m2`
+- `geom`
+
+**Why included:**
+The application evaluates biodiversity potential at property level, so parcel geometries are the core spatial unit.
+
 ## Natura 2000 areas
 
 **Source:** SYKE WFS  
@@ -17,20 +31,6 @@ What external datasets this project uses, where they come from, and what they co
 **Why included:**
 Natura areas indicate existing conservation value and ecological context. The application uses them to calculate overlap and nearest-distance indicators.
 
-## Cadastral parcels
-
-**Source:** National Land Survey of Finland / MML  
-**Use in project:** User input and main analysis unit  
-**Target table:** `core.parcels`  
-**Key fields:**
-- `property_id`
-- `municipality_code`
-- `area_m2`
-- `geom`
-
-**Why included:**
-The application evaluates biodiversity potential at property level, so parcel geometries are the core spatial unit.
-
 ## Forest stands
 
 **Source:** Finnish Forest Centre (Metsäkeskus) WFS  
@@ -42,7 +42,7 @@ The application evaluates biodiversity potential at property level, so parcel ge
 - `drainage_state`
 - `special_feature`
 - `mean_age`
-- `source_identifier`: stable per-feature id from the source, used for idempotent upserts (see ADR-002 in `decisions.md`)
+- `source_identifier`
 - `geom`
 
 **Why included:**

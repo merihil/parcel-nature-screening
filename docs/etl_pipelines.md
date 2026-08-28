@@ -38,7 +38,7 @@ Handles geometry and attribute normalization across differing source schemas.
 ### `geo/aoi.py`
 
 Resolves an Area of Interest (AOI): either an explicit bounding box, or one derived from buffered
-parcel's geometry. Every importer that needs to scope a fetch to an area goes through this, instead of each script inventing its own notion of "the area."
+parcel's geometry.
 
 ### `etl/cli.py`
 
@@ -64,8 +64,7 @@ property-level geometries.
 Source: SYKE WFS  
 Target table: `core.nature_features`
 
-Imports SAC, SCI and SPA areas and stores them in a shared nature feature table. Natura sites
-are a small, bounded national dataset, so this pipeline always imports everything.
+Imports SAC, SCI and SPA areas and stores them in a shared nature feature table.
 
 ### Forest stand import (`etl/import_forest_stands.py`)
 
@@ -78,14 +77,3 @@ scoped to an AOI.
 ### On-demand coverage (`etl/ensure_coverage.py`)
 
 Called from the API. Checks whether a forest stand fetch has already been logged for this specific property_id If not logged, it resolves the AOI for the parcel and triggers the forest stand import.
-
-## Scaling strategy
-
-Two different strategies, chosen by dataset size, not one:
-
-- **Small, bounded national datasets** are imported fully into PostGIS, kept fresh
-  by periodically re-running the import.
-- **Large datasets** are imported by AOI (bounding box,
-  or a buffered parcel geometry) and stay cached in PostGIS
-  indefinitely once fetched. A request for a new area triggers a fetch; a request for an
-  already-covered area is served entirely from PostGIS.

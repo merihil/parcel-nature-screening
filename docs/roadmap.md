@@ -18,35 +18,30 @@
 - Load parcels on demand from MML ✅
 - Cache downloaded parcels ✅ 
 - Add forest stand indicators to scoring ✅ 
-- fix: if `property_id` doesn't exist in MML either, `ensure_parcel_exists` currently lets
-  a raw `RuntimeError` surface as a 500 instead of a clean 404.
+- Clean 404 for a `property_id` that doesn't exist in MML either ✅ 
 
 ---
 
-## Phase 3 – National scale
+## Phase 3 – Analytical depth
+
+- Bring in more data sources to widen what the screening actually covers
+
+---
+
+## Phase 4 – Frontend
+
+
+- Simple web UI
+- Map view showing the parcel's own geometry alongside whatever it overlaps or is near
+
+---
+
+## Phase 5 – National scale
 
 - Scheduled ETL and automatic data refresh for small, fully-preloaded datasets (Natura 2000,
   and future ones like groundwater areas)
 - Metadata for imported datasets
 - Cache computed parcel scores.
-
----
-
-## Phase 4 – Analytical depth
-
-- Bring in more data sources (e.g. groundwater areas, protected habitats) to widen what the
-  screening actually covers
-- The current point values are a self-consistent choice, not something derived from a real ecological weighting
-  model. Could be thought through more carefully later.
-
----
-
-## Phase 5 – Frontend
-
-
-- Simple web UI
-- Map view showing the parcel's own geometry alongside whatever it overlaps or is near (Natura
-  2000 areas, forest stands)
 
 ---
 

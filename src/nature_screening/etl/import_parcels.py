@@ -41,6 +41,16 @@ PROPERTY_ID_CANDIDATES = [
 ]
 
 
+class ParcelNotFoundError(Exception):
+    """Raised when MML has no parcel for a given property_id.
+
+    Distinct from RuntimeError, which import_parcels also raises for real
+    failures (e.g. a missing/expired MML_API_KEY) — callers need to tell
+    "doesn't exist" apart from "something is broken" without string-matching
+    error messages.
+    """
+
+
 def get_mml_api_key() -> str:
     if not settings.mml_api_key:
         raise RuntimeError("MML_API_KEY is missing from environment settings.")
@@ -346,6 +356,9 @@ def import_parcels(
         property_id=property_id,
         limit=limit,
     )
+
+    if property_id is not None and not feature_collection["features"]:
+        raise ParcelNotFoundError(property_id)
 
     save_raw_geojson(feature_collection, raw_output_path)
 

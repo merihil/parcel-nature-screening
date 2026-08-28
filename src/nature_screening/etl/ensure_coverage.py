@@ -3,15 +3,27 @@ from sqlalchemy import text
 from nature_screening.db.connection import get_engine
 from nature_screening.db.queries import get_parcel_geometry
 from nature_screening.etl.import_forest_stands import import_forest_stand_data_from_wfs
-from nature_screening.etl.import_parcels import import_parcels
+from nature_screening.etl.import_parcels import ParcelNotFoundError, import_parcels
 from nature_screening.geo.aoi import DEFAULT_BUFFER_M, resolve_aoi
 
 
 def ensure_parcel_exists(property_id: str) -> None:
+    """
+    Fetch the parcel from MML if it isn't already in core.parcels.
+
+    Swallows ParcelNotFoundError deliberately: it just leaves the parcel
+    absent, so the caller's existing "parcel not found -> 404" check handles
+    it the same way as any other missing parcel. Other exceptions (e.g. a
+    real MML API failure) are not caught here and propagate as a 500.
+    """
+
     if get_parcel_geometry(property_id) is not None:
         return
 
-    import_parcels(property_id=property_id)
+    try:
+        import_parcels(property_id=property_id)
+    except ParcelNotFoundError:
+        return
 
 
 def has_forest_stand_coverage(property_id: str) -> bool:

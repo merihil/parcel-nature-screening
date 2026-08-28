@@ -5,8 +5,10 @@ combining several spatial datasets — Natura 2000 protected areas, forest stand
 cadastral parcel boundaries — into a single biodiversity-potential screening result.
 
 Given a parcel's `property_id`, the API returns a preliminary score and the spatial evidence
-behind it (Natura 2000 overlap, distance to the nearest protected site, and more indicators
-planned). It is a learning/portfolio project, not an official conservation assessment tool.
+behind it: Natura 2000 overlap, distance to the nearest protected site, forest stand age,
+natural mire, uneven-aged forest structure, and flagged special habitat features. More
+indicators planned. It is a learning/portfolio project, not an official conservation assessment
+tool.
 
 ## Tech stack
 
@@ -60,7 +62,7 @@ request access).
 docker compose up -d
 ```
 
-This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/004` on first
+This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/005` on first
 run (fresh database volume only — see below if you're applying a new migration to an existing
 database).
 
@@ -80,18 +82,23 @@ hand:
 
 ```bash
 docker compose exec -T db psql -U nature -d naturedb < sql/004_forest_stand_features.sql
+docker compose exec -T db psql -U nature -d naturedb < sql/005_forest_stand_fetch_log.sql
 ```
 
-Then import a parcel and the Natura 2000 dataset:
+Import the Natura 2000 dataset (small, always imported in full):
 
 ```bash
-python -m nature_screening.etl.import_parcels --property-id 091-403-0063-0091
 python -m nature_screening.etl.import_nature_features
 ```
 
-Forest stand data doesn't need a separate manual import — it's fetched automatically, scoped to
-the parcel being screened, the first time it's requested through the API (see
-[`docs/etl_pipelines.md`](docs/etl_pipelines.md)).
+Parcels and forest stand data don't need a separate manual import — both are fetched
+automatically, scoped to the parcel being screened, the first time it's requested through the
+API (see [`docs/etl_pipelines.md`](docs/etl_pipelines.md)). You can still import a parcel by
+hand if you want:
+
+```bash
+python -m nature_screening.etl.import_parcels --property-id 091-403-0063-0091
+```
 
 ### 6. Run the API
 
