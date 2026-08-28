@@ -1,8 +1,8 @@
 # Parcel Nature Screening
 
-A GIS backend that evaluates environmental conservation value for cadastral parcels in Finland by
-combining several spatial datasets — Natura 2000 protected areas, forest stand data, and
-cadastral parcel boundaries — into a single biodiversity-potential screening result.
+A GIS backend that evaluates environmental conservation value for cadastral parcels in Finland by combining several
+spatial datasets, Natura 2000 protected areas, forest stand data, and cadastral parcel boundaries into a single
+biodiversity-potential screening result.
 
 Given a parcel's `property_id`, the API returns a preliminary score and the spatial evidence
 behind it: Natura 2000 overlap, distance to the nearest protected site, forest stand age,
@@ -52,8 +52,9 @@ Why things are structured this way, including tradeoffs considered: [`docs/decis
 cp .env.example .env
 ```
 
-Fill in `.env` with your own values — a database password for local use, and API
-credentials/endpoints for MML, SYKE and Metsäkeskus (see comments in `.env.example` for where to
+Fill in `.env` with your own values:
+- a database password for local use
+- API credentials/endpoints for MML, SYKE and Metsäkeskus (see comments in `.env.example` for where to
 request access).
 
 ### 3. Start PostGIS
