@@ -10,11 +10,11 @@ import geopandas as gpd
 import pandas as pd
 import requests
 from requests.auth import HTTPBasicAuth
-from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Engine
 
 from nature_screening.config import settings
 from nature_screening.db.connection import get_engine
+from nature_screening.db.write import upsert_gdf_to_postgis
 from nature_screening.geo.normalize import ensure_valid_multipolygons
 
 MML_BASE_URL = (
@@ -299,48 +299,17 @@ def write_raw_to_postgis(
     print(f"Wrote {len(raw)} rows to {RAW_SCHEMA}.{RAW_TABLE}")
 
 
-def delete_existing_core_parcels(
-    core: gpd.GeoDataFrame,
-    engine: Engine,
-) -> None:
-    property_ids = core["property_id"].dropna().unique().tolist()
-
-    if not property_ids:
-        return
-
-    statement = text(f"""
-        DELETE FROM {CORE_SCHEMA}.{CORE_TABLE}
-        WHERE source_name = :source_name
-        AND property_id IN :property_ids
-        """).bindparams(bindparam("property_ids", expanding=True))
-
-    with engine.begin() as connection:
-        connection.execute(
-            statement,
-            {
-                "source_name": SOURCE_NAME,
-                "property_ids": property_ids,
-            },
-        )
-
-
 def write_core_to_postgis(
     core: gpd.GeoDataFrame,
-    engine: Engine,
 ) -> None:
-    delete_existing_core_parcels(core, engine)
-
-    core_to_write = core.rename_geometry("geom")
-
-    core_to_write.to_postgis(
-        name=CORE_TABLE,
-        con=engine,
+    written = upsert_gdf_to_postgis(
+        core,
+        table=CORE_TABLE,
+        conflict_columns=["property_id"],
         schema=CORE_SCHEMA,
-        if_exists="append",
-        index=False,
     )
 
-    print(f"Wrote {len(core_to_write)} rows to {CORE_SCHEMA}.{CORE_TABLE}")
+    print(f"Wrote {written} rows to {CORE_SCHEMA}.{CORE_TABLE}")
 
 
 def import_parcels(
@@ -368,7 +337,7 @@ def import_parcels(
     engine = get_engine()
 
     write_raw_to_postgis(gdf, engine, replace=replace_raw)
-    write_core_to_postgis(core, engine)
+    write_core_to_postgis(core)
 
     print("Parcel import completed successfully.")
 
