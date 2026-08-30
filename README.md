@@ -17,24 +17,11 @@ Metsäkeskus) · Docker
 
 ## Architecture
 
-```
-External APIs (MML, SYKE, Metsäkeskus WFS)
-        │
-        ▼
-      ETL            fetch + normalize + write
-        │
-        ▼
-     PostGIS         single spatial datastore, also acts as a cache
-        │
-        ▼
-    Analysis         reads PostGIS, computes indicators
-        │
-        ▼
-     Scoring         turns indicators into a biodiversity-potential score
-        │
-        ▼
-      FastAPI        exposes parcel lookup and analysis over HTTP
-```
+The pipeline runs in one direction: external WFS/API sources (MML, SYKE, Metsäkeskus) are
+fetched and normalized by the ETL layer, then written into PostGIS, which serves as both the
+analysis datastore and a cache of previously fetched areas. Analysis reads from PostGIS to
+compute spatial indicators (Natura overlap, forest stand attributes), Scoring turns those into
+a biodiversity-potential score, and FastAPI exposes parcel lookup and analysis over HTTP.
 
 Full breakdown of each layer's responsibility: [`docs/architecture.md`](docs/architecture.md).
 Why things are structured this way, including tradeoffs considered: [`docs/decisions.md`](docs/decisions.md).
@@ -63,7 +50,7 @@ request access).
 docker compose up -d
 ```
 
-This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/005` on first
+This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/006` on first
 run (fresh database volume only — see below if you're applying a new migration to an existing
 database).
 
@@ -84,6 +71,7 @@ hand:
 ```bash
 docker compose exec -T db psql -U nature -d naturedb < sql/004_forest_stand_features.sql
 docker compose exec -T db psql -U nature -d naturedb < sql/005_forest_stand_fetch_log.sql
+docker compose exec -T db psql -U nature -d naturedb < sql/006_parcels_unique_property_id.sql
 ```
 
 Import the Natura 2000 dataset (small, always imported in full):
