@@ -13,7 +13,6 @@ dependencies = [
     "uvicorn",
     "pydantic",
     "pydantic-settings",
-    "python-dotenv",
     "psycopg[binary]",
     "sqlalchemy",
     "geopandas",

@@ -1,9 +1,7 @@
-import os
-
 import geopandas as gpd
 import pandas as pd
-from dotenv import load_dotenv
 
+from nature_screening.config import settings
 from nature_screening.db.write import delete_source_rows, write_gdf_to_postgis
 from nature_screening.geo.wfs import fetch_wfs_layer
 from nature_screening.geo.normalize import ensure_valid_multipolygons, pick_column
@@ -43,12 +41,10 @@ def normalize_natura_gdf(
 
 
 def import_natura_from_wfs(replace: bool = False) -> None:
-    load_dotenv()
-
-    wfs_url = os.getenv("SYKE_NATURA_WFS_URL")
-    sac_typename = os.getenv("SYKE_NATURA_SAC_TYPENAME")
-    sci_typename = os.getenv("SYKE_NATURA_SCI_TYPENAME")
-    spa_typename = os.getenv("SYKE_NATURA_SPA_TYPENAME")
+    wfs_url = settings.syke_natura_wfs_url
+    sac_typename = settings.syke_natura_sac_typename
+    sci_typename = settings.syke_natura_sci_typename
+    spa_typename = settings.syke_natura_spa_typename
 
     if not wfs_url:
         raise RuntimeError("Missing SYKE_NATURA_WFS_URL in .env")

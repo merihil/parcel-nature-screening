@@ -1,11 +1,10 @@
 # Importing forest stands
 
 import argparse
-import os
 
 import geopandas as gpd
-from dotenv import load_dotenv
 
+from nature_screening.config import settings
 from nature_screening.db.write import delete_source_rows, upsert_gdf_to_postgis
 from nature_screening.etl.cli import add_aoi_arguments
 from nature_screening.geo.aoi import resolve_aoi
@@ -51,10 +50,8 @@ def import_forest_stand_data_from_wfs(
     replace: bool = False,
     bbox: tuple[float, float, float, float] | None = None,
 ) -> None:
-    load_dotenv()
-
-    wfs_url = os.getenv("FOREST_STAND_WFS")
-    type_name = os.getenv("FOREST_STAND_TYPENAME", "v1:stand")
+    wfs_url = settings.forest_stand_wfs
+    type_name = settings.forest_stand_typename
 
     if not wfs_url:
         raise RuntimeError("Missing FOREST_STAND_WFS in .env")

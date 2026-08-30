@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     syke_natura_sac_typename: str | None = None
 
     forest_stand_wfs: str | None = None
-    forest_stand_typename: str | None = None
+    forest_stand_typename: str = "v1:stand"
 
     @property
     def database_url(self) -> str:
