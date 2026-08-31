@@ -26,6 +26,23 @@ a biodiversity-potential score, and FastAPI exposes parcel lookup and analysis o
 Full breakdown of each layer's responsibility: [`docs/architecture.md`](docs/architecture.md).
 Why things are structured this way, including tradeoffs considered: [`docs/decisions.md`](docs/decisions.md).
 
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md) — layers and module responsibilities
+- [`docs/data_sources.md`](docs/data_sources.md) — what each external dataset is and why it's used
+- [`docs/etl_pipelines.md`](docs/etl_pipelines.md) — how data is fetched, normalized and stored
+- [`docs/decisions.md`](docs/decisions.md) — architecture decision records (ADRs)
+- [`docs/learning_notes.md`](docs/learning_notes.md) — informal notes on what I've learned throughout the process of making this project
+- [`docs/roadmap.md`](docs/roadmap.md) — what's done and what's planned
+
+
+**A note on how this was built.** I used Claude Code while working on this project, not just for boilerplate but for
+real architecture and debugging work. [`docs/learning_notes.md`](docs/learning_notes.md)
+has an honest account of how that went, including a point where I had to stop and
+change how I was using it, and how I work through the code now: understanding and
+testing each piece myself rather than taking it on faith. It's the part of this
+project I'd most want a reviewer to read.
+
 ## Getting started
 
 ### 1. Prerequisites
@@ -115,20 +132,6 @@ sql/                 database schema, applied in order
 docs/                architecture notes, data sources, ADRs, learning notes, roadmap
 tests/
 ```
-
-## Documentation
-
-- [`docs/architecture.md`](docs/architecture.md) — layers and module responsibilities
-- [`docs/data_sources.md`](docs/data_sources.md) — what each external dataset is and why it's used
-- [`docs/etl_pipelines.md`](docs/etl_pipelines.md) — how data is fetched, normalized and stored
-- [`docs/decisions.md`](docs/decisions.md) — architecture decision records (ADRs)
-- [`docs/learning_notes.md`](docs/learning_notes.md) — informal notes on why things are built this way
-- [`docs/roadmap.md`](docs/roadmap.md) — what's done and what's planned
-
-## Disclaimer
-
-This is a preliminary geospatial screening tool. Its output does not replace field surveys,
-official conservation assessments, or authority decisions.
 
 ## License
 
