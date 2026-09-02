@@ -38,8 +38,7 @@
 
 ## Phase 5 – National scale
 
-- Scheduled ETL and automatic data refresh for small, fully-preloaded datasets (Natura 2000,
-  and future ones like groundwater areas)
+- Scheduled ETL and automatic data refresh for small, fully-preloaded datasets
 - Metadata for imported datasets
 - Cache computed parcel scores.
 

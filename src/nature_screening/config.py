@@ -9,13 +9,19 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     mml_api_key: str | None = None
 
-    syke_natura_wfs_url: str | None = None
-    syke_natura_sci_typename: str | None = None
-    syke_natura_spa_typename: str | None = None
-    syke_natura_sac_typename: str | None = None
+    # Public WFS endpoints, fixed for these data sources — not secrets, don't
+    # vary by environment. Given real defaults so nothing needs to be filled
+    # in .env, but still overridable there if a source ever changes.
+    syke_natura_wfs_url: str = "https://paikkatiedot.ymparisto.fi/geoserver/inspire_ps/ows"
+    syke_natura_sci_typename: str = "inspire_ps:PS.ProtectedSitesProposedSiteOfCommunityImportance"
+    syke_natura_spa_typename: str = "inspire_ps:PS.ProtectedSitesSpecialProtectionArea"
+    syke_natura_sac_typename: str = "inspire_ps:PS.ProtectedSitesSpecialAreaOfConservation"
 
-    forest_stand_wfs: str | None = None
+    forest_stand_wfs: str = "https://avoin.metsakeskus.fi/rajapinnat/v1/stand/wfs"
     forest_stand_typename: str = "v1:stand"
+
+    special_habitat_wfs: str = "https://avoin.metsakeskus.fi/rajapinnat/v1/habitat/wfs"
+    special_habitat_typename: str = "v1:habitat"
 
     @property
     def database_url(self) -> str:

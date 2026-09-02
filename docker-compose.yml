@@ -16,6 +16,7 @@ services:
       - ./sql/004_forest_stand_features.sql:/docker-entrypoint-initdb.d/004_forest_stand_features.sql
       - ./sql/005_forest_stand_fetch_log.sql:/docker-entrypoint-initdb.d/005_forest_stand_fetch_log.sql
       - ./sql/006_parcels_unique_property_id.sql:/docker-entrypoint-initdb.d/006_parcels_unique_property_id.sql
+      - ./sql/007_special_habitat_features.sql:/docker-entrypoint-initdb.d/007_special_habitat_features.sql
 
   pgadmin:
     image: dpage/pgadmin4

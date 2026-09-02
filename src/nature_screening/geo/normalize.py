@@ -1,7 +1,13 @@
+import hashlib
+
 import geopandas as gpd
 from shapely import make_valid
 from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry
+
+
+def geometry_identifier(geometry: BaseGeometry) -> str:
+    return hashlib.sha1(geometry.wkb).hexdigest()
 
 
 def pick_column(

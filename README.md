@@ -67,7 +67,7 @@ request access).
 docker compose up -d
 ```
 
-This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/006` on first
+This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/007` on first
 run (fresh database volume only — see below if you're applying a new migration to an existing
 database).
 
@@ -89,6 +89,7 @@ hand:
 docker compose exec -T db psql -U nature -d naturedb < sql/004_forest_stand_features.sql
 docker compose exec -T db psql -U nature -d naturedb < sql/005_forest_stand_fetch_log.sql
 docker compose exec -T db psql -U nature -d naturedb < sql/006_parcels_unique_property_id.sql
+docker compose exec -T db psql -U nature -d naturedb < sql/007_special_habitat_features.sql
 ```
 
 Import the Natura 2000 dataset (small, always imported in full):
