@@ -48,4 +48,20 @@ Natura areas indicate existing conservation value and ecological context. The ap
 **Why included:**
 Forest stand attributes can indicate old forest, fertile habitats, peatlands and potential biodiversity value.
 
+## Special habitats
+
+**Source:** Finnish Forest Centre (Metsäkeskus) WFS
+**Use in project:** Officially flagged especially important habitats
+**Target table:** `core.special_habitat_features`  
+**Key fields:**
+- `source_identifier`
+- `special_feature`
+- `development_class`
+- `drainage_state`
+- `mean_age`
+- `geom`
+
+**Why included:**
+This layer is Metsäkeskus's own narrower, more authoritative selection of especially important habitats.
+
 **More data sources will be added as the project evolves.**

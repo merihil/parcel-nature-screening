@@ -1,9 +1,10 @@
 def classify_score(score: float) -> str:
-    if score >= 81:
+
+    if score >= 105:
         return "very_high"
-    if score >= 61:
+    if score >= 79:
         return "high"
-    if score >= 31:
+    if score >= 40:
         return "moderate"
     return "low"
 
@@ -111,11 +112,6 @@ def score_forest_age(max_mean_age: int | None) -> dict:
 
 
 def score_natural_mire(has_natural_mire: bool) -> dict:
-    """
-    Natural (undrained) mire is a recognized valuable habitat type in
-    Finland, distinct from mire that has been ditched for forestry
-    (DRAINAGESTATE codes 2, 3, 7, 8, 9), which is not scored here.
-    """
 
     if not has_natural_mire:
         return {
@@ -160,11 +156,6 @@ def score_uneven_aged_structure(has_uneven_aged_structure: bool) -> dict:
 
 
 def score_special_feature(has_special_feature: bool) -> dict:
-    """
-    SPECIALFEATURECODE flags a stand as having a notable habitat feature
-    (e.g. old forest, herb-rich forest types, springs, cliffs) — Metsäkeskus
-    has already identified it as biodiversity-relevant.
-    """
 
     if not has_special_feature:
         return {
@@ -220,8 +211,77 @@ def score_indicators(indicators: dict) -> dict:
         if result["evidence"] is not None:
             evidence.append(result["evidence"])
 
+    # 4) Special habitat indicators, independent of everything else
+    special_habitat_indicator_results = [
+        score_special_habitat_overlap(indicators.get("special_habitat_overlap_ha", 0)),
+        score_special_habitat_diversity(indicators.get("special_habitat_count", 0)),
+    ]
+
+    for result in special_habitat_indicator_results:
+        total_score += result["points"]
+
+        if result["evidence"] is not None:
+            evidence.append(result["evidence"])
+
     return {
         "score_total": total_score,
         "score_class": classify_score(total_score),
         "evidence": evidence,
+    }
+
+
+def score_special_habitat_overlap(special_habitat_overlap_ha: float) -> dict:
+    """
+    Tiered by overlap area —> more overlap gives more points.
+    """
+
+    if special_habitat_overlap_ha > 5:
+        points = 20
+        reason = "Parcel has substantial special habitat overlap (over 5 ha)."
+    elif special_habitat_overlap_ha > 1:
+        points = 12
+        reason = "Parcel has notable special habitat overlap (over 1 ha)."
+    elif special_habitat_overlap_ha > 0.01:
+        points = 5
+        reason = "Parcel has minor special habitat overlap."
+    else:
+        return {
+            "points": 0,
+            "evidence": None,
+        }
+
+    return {
+        "points": points,
+        "evidence": {
+            "indicator": "special_habitat_overlap",
+            "points": points,
+            "reason": reason,
+            "value": round(special_habitat_overlap_ha, 3),
+            "unit": "ha",
+        },
+    }
+
+
+def score_special_habitat_diversity(special_habitat_count: int) -> dict:
+    """
+    Bonus for touching many distinct special habitat features, not just a
+    single large one — additive on top of score_special_habitat_overlap,
+    since area and diversity are different signals.
+    """
+
+    if special_habitat_count < 5:
+        return {
+            "points": 0,
+            "evidence": None,
+        }
+
+    return {
+        "points": 10,
+        "evidence": {
+            "indicator": "special_habitat_diversity",
+            "points": 10,
+            "reason": f"Parcel touches {special_habitat_count} separate special habitat areas.",
+            "value": special_habitat_count,
+            "unit": "areas",
+        },
     }

@@ -25,6 +25,7 @@
 ## Phase 3 – Analytical depth
 
 - Bring in more data sources to widen what the screening actually covers
+  - Brought in the Metsakeskus' important special habitat features ✅ 
 
 ---
 

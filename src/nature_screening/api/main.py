@@ -2,7 +2,11 @@ from fastapi import FastAPI, HTTPException
 
 from nature_screening.analysis.analysis import analyze_parcel
 from nature_screening.analysis.parcel_lookup import get_parcel_by_property_id
-from nature_screening.etl.ensure_coverage import ensure_forest_stand_coverage, ensure_parcel_exists
+from nature_screening.etl.ensure_coverage import (
+    ensure_forest_stand_coverage,
+    ensure_parcel_exists,
+    ensure_special_habitat_coverage,
+)
 
 app = FastAPI(title="Parcel Nature Screening API")
 
@@ -32,5 +36,6 @@ def get_parcel_analysis(property_id: str):
         raise HTTPException(status_code=404, detail="Parcel not found")
 
     ensure_forest_stand_coverage(property_id)
+    ensure_special_habitat_coverage(property_id)
 
     return analyze_parcel(property_id)

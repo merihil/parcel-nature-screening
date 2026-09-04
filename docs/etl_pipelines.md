@@ -74,6 +74,17 @@ Target table: `core.forest_stand_features`
 Imports forest stand polygons and selected attributes relevant for biodiversity screening,
 scoped to an AOI.
 
+### Special habitat import (`etl/import_special_habitats.py`)
+
+Source: Finnish Forest Centre (Metsäkeskus) WFS 
+Target table: `core.special_habitat_features`
+
+Imports Metsäkeskus's own narrower selection of especially important habitats, scoped to an
+AOI. `source_identifier` is derived from the geometry, not a WFS id.
+
 ### On-demand coverage (`etl/ensure_coverage.py`)
 
-Called from the API. Checks whether a forest stand fetch has already been logged for this specific property_id If not logged, it resolves the AOI for the parcel and triggers the forest stand import.
+Called from the API, for both forest stands and special habitats. For each, checks whether a
+fetch has already been logged for this specific property_id (`core.forest_stand_fetch_log` /
+`core.special_habitat_fetch_log`). If not logged, resolves the AOI for the parcel and triggers
+that source's import.

@@ -130,11 +130,52 @@ def get_forest_stand_summary(property_id: str) -> dict:
     }
 
 
+def get_special_habitat_overlap(property_id: str) -> dict:
+    """
+    special_habitat_count counts distinct features (rows) touching the
+    parcel, but overlap_ha unions their geometries before measuring area
+    """
+
+    query = text("""
+        SELECT
+            COALESCE(overlap.overlap_ha, 0) AS overlap_ha,
+            COALESCE(overlap.special_habitat_count, 0) AS special_habitat_count
+        FROM core.parcels p
+        LEFT JOIN LATERAL (
+            SELECT
+                ST_Area(ST_Intersection(ST_Union(nf.geom), p.geom)) / 10000.0 AS overlap_ha,
+                COUNT(DISTINCT nf.source_identifier) AS special_habitat_count
+            FROM core.special_habitat_features nf
+            WHERE nf.feature_type = 'special_habitat'
+            AND ST_Intersects(nf.geom, p.geom)
+        ) overlap ON true
+        WHERE p.property_id = :property_id
+        """)
+
+    engine = get_engine()
+
+    with engine.connect() as connection:
+        result = (
+            connection.execute(
+                query,
+                {"property_id": property_id},
+            )
+            .mappings()
+            .first()
+        )
+
+    return {
+        "special_habitat_overlap_ha": float(result["overlap_ha"] or 0),
+        "special_habitat_count": int(result["special_habitat_count"] or 0),
+    }
+
+
 def calculate_indicators(property_id: str) -> dict:
     indicators = {}
 
     indicators.update(get_natura_overlap(property_id))
     indicators.update(get_nearest_natura_distance(property_id))
     indicators.update(get_forest_stand_summary(property_id))
+    indicators.update(get_special_habitat_overlap(property_id))
 
     return indicators
