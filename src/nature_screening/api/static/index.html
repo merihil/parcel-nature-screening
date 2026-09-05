@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Parcel Nature Screening</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.4rem; }
+  form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+  input { flex: 1; padding: 0.5rem; font-size: 1rem; }
+  button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+  #status { color: #555; }
+  #error { color: #b00020; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.4rem; border-bottom: 1px solid #ddd; }
+  .score-box { padding: 1rem; border-radius: 6px; background: #f0f4f0; margin-bottom: 1rem; }
+  .score-box .score { font-size: 2rem; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Parcel Nature Screening</h1>
+
+<form id="lookup-form">
+  <input id="property-id" type="text" placeholder="e.g. 091-403-0063-0091" required>
+  <button type="submit">Analyze</button>
+</form>
+
+<p id="status"></p>
+<p id="error"></p>
+<div id="result"></div>
+
+<script>
+const form = document.getElementById("lookup-form");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
+const resultEl = document.getElementById("result");
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const propertyId = document.getElementById("property-id").value.trim();
+  statusEl.textContent = "Loading — this can take a while the first time a new area is fetched...";
+  errorEl.textContent = "";
+  resultEl.innerHTML = "";
+
+  try {
+    const response = await fetch(`/parcels/${encodeURIComponent(propertyId)}/analysis`);
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || `Request failed (${response.status})`);
+    }
+
+    const data = await response.json();
+    statusEl.textContent = "";
+    resultEl.innerHTML = renderResult(data);
+  } catch (err) {
+    statusEl.textContent = "";
+    errorEl.textContent = err.message;
+  }
+});
+
+function renderResult(data) {
+  const evidenceRows = data.evidence
+    .map(
+      (e) => `
+        <tr>
+          <td>${e.indicator}</td>
+          <td>${e.points}</td>
+          <td>${e.reason}</td>
+          <td>${e.value ?? ""} ${e.unit ?? ""}</td>
+        </tr>`
+    )
+    .join("");
+
+  return `
+    <div class="score-box">
+      <div class="score">${data.biodiversity_potential.score} — ${data.biodiversity_potential.class}</div>
+      <div>${data.parcel.area_ha} ha · municipality ${data.parcel.municipality_code}</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Indicator</th><th>Points</th><th>Reason</th><th>Value</th></tr>
+      </thead>
+      <tbody>${evidenceRows || "<tr><td colspan=4>No scoring evidence.</td></tr>"}</tbody>
+    </table>
+    <p><em>${data.disclaimer}</em></p>
+  `;
+}
+</script>
+
+</body>
+</html>

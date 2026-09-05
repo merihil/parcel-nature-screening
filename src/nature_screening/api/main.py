@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 
 from nature_screening.analysis.analysis import analyze_parcel
 from nature_screening.analysis.parcel_lookup import get_parcel_by_property_id
@@ -39,3 +42,8 @@ def get_parcel_analysis(property_id: str):
     ensure_special_habitat_coverage(property_id)
 
     return analyze_parcel(property_id)
+
+
+# Mounted last so it never shadows the API routes above — Starlette matches
+# routes in registration order, and this is a catch-all at "/".
+app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")
