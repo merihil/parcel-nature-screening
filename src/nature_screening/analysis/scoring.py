@@ -1,10 +1,17 @@
+# Highest raw point total any parcel can reach (all indicators triggered,
+# Natura overlap taking the 30-point branch instead of natura_distance):
+# 30 + 20 + 15 + 15 + 20 + 20 + 10 = 130. score_indicators() divides by this
+# to express score_total on a 0-100 scale.
+MAX_RAW_SCORE = 130
+
+
 def classify_score(score: float) -> str:
 
-    if score >= 105:
+    if score >= 80.8:
         return "very_high"
-    if score >= 79:
+    if score >= 60.8:
         return "high"
-    if score >= 40:
+    if score >= 30.8:
         return "moderate"
     return "low"
 
@@ -20,11 +27,15 @@ def score_natura_overlap(natura_overlap_ha: float) -> dict:
                 "value": round(natura_overlap_ha, 3),
                 "unit": "ha",
             },
+            "no_points_evidence": None,
         }
 
+    # No "not overlapping" explanation here — score_natura_distance() covers
+    # the no-overlap case with a more specific reason (near/far/unknown).
     return {
         "points": 0,
         "evidence": None,
+        "no_points_evidence": None,
     }
 
 
@@ -39,6 +50,12 @@ def score_natura_distance(nearest_natura_distance_m: float | None) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "natura_distance",
+                "reason": "Distance to the nearest Natura 2000 area is not known.",
+                "value": None,
+                "unit": None,
+            },
         }
 
     if nearest_natura_distance_m == 0:
@@ -61,6 +78,12 @@ def score_natura_distance(nearest_natura_distance_m: float | None) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "natura_distance",
+                "reason": "Parcel is more than 5 km from the nearest Natura 2000 area.",
+                "value": round(nearest_natura_distance_m, 1),
+                "unit": "m",
+            },
         }
 
     return {
@@ -72,6 +95,7 @@ def score_natura_distance(nearest_natura_distance_m: float | None) -> dict:
             "value": round(nearest_natura_distance_m, 1),
             "unit": "m",
         },
+        "no_points_evidence": None,
     }
 
 
@@ -85,6 +109,12 @@ def score_forest_age(max_mean_age: int | None) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "forest_age",
+                "reason": "Forest stand age data is not available.",
+                "value": None,
+                "unit": "years",
+            },
         }
 
     if max_mean_age > 100:
@@ -97,6 +127,12 @@ def score_forest_age(max_mean_age: int | None) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "forest_age",
+                "reason": "No forest stand on the parcel is 60 years or older.",
+                "value": max_mean_age,
+                "unit": "years",
+            },
         }
 
     return {
@@ -108,6 +144,7 @@ def score_forest_age(max_mean_age: int | None) -> dict:
             "value": max_mean_age,
             "unit": "years",
         },
+        "no_points_evidence": None,
     }
 
 
@@ -117,6 +154,12 @@ def score_natural_mire(has_natural_mire: bool) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "natural_mire",
+                "reason": "No undrained natural mire (Luonnontilainen suo) found on parcel.",
+                "value": False,
+                "unit": None,
+            },
         }
 
     return {
@@ -128,6 +171,7 @@ def score_natural_mire(has_natural_mire: bool) -> dict:
             "value": True,
             "unit": None,
         },
+        "no_points_evidence": None,
     }
 
 
@@ -141,6 +185,15 @@ def score_uneven_aged_structure(has_uneven_aged_structure: bool) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "uneven_aged_structure",
+                "reason": (
+                    "No uneven-aged (continuous-cover) stand structure "
+                    "(Eri-ikäisrakenteinen metsikkö) found on parcel."
+                ),
+                "value": False,
+                "unit": None,
+            },
         }
 
     return {
@@ -152,6 +205,7 @@ def score_uneven_aged_structure(has_uneven_aged_structure: bool) -> dict:
             "value": True,
             "unit": None,
         },
+        "no_points_evidence": None,
     }
 
 
@@ -161,6 +215,12 @@ def score_special_feature(has_special_feature: bool) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "special_feature",
+                "reason": "No flagged special habitat feature found on parcel's forest stands.",
+                "value": False,
+                "unit": None,
+            },
         }
 
     return {
@@ -172,61 +232,7 @@ def score_special_feature(has_special_feature: bool) -> dict:
             "value": True,
             "unit": None,
         },
-    }
-
-
-def score_indicators(indicators: dict) -> dict:
-    total_score = 0
-    evidence = []
-
-    natura_overlap_ha = indicators.get("natura_overlap_ha", 0)
-    nearest_natura_distance_m = indicators.get("nearest_natura_distance_m")
-
-    # 1) Natura overlap always checked first
-    natura_overlap_result = score_natura_overlap(natura_overlap_ha)
-    total_score += natura_overlap_result["points"]
-
-    if natura_overlap_result["evidence"] is not None:
-        evidence.append(natura_overlap_result["evidence"])
-
-    # 2) Natura distance only if parcel does NOT overlap Natura
-    if natura_overlap_ha <= 0:
-        natura_distance_result = score_natura_distance(nearest_natura_distance_m)
-        total_score += natura_distance_result["points"]
-
-        if natura_distance_result["evidence"] is not None:
-            evidence.append(natura_distance_result["evidence"])
-
-    # 3) Forest stand indicators, independent of Natura proximity
-    forest_indicator_results = [
-        score_forest_age(indicators.get("max_mean_age")),
-        score_natural_mire(indicators.get("has_natural_mire", False)),
-        score_uneven_aged_structure(indicators.get("has_uneven_aged_structure", False)),
-        score_special_feature(indicators.get("has_special_feature", False)),
-    ]
-
-    for result in forest_indicator_results:
-        total_score += result["points"]
-
-        if result["evidence"] is not None:
-            evidence.append(result["evidence"])
-
-    # 4) Special habitat indicators, independent of everything else
-    special_habitat_indicator_results = [
-        score_special_habitat_overlap(indicators.get("special_habitat_overlap_ha", 0)),
-        score_special_habitat_diversity(indicators.get("special_habitat_count", 0)),
-    ]
-
-    for result in special_habitat_indicator_results:
-        total_score += result["points"]
-
-        if result["evidence"] is not None:
-            evidence.append(result["evidence"])
-
-    return {
-        "score_total": total_score,
-        "score_class": classify_score(total_score),
-        "evidence": evidence,
+        "no_points_evidence": None,
     }
 
 
@@ -248,6 +254,12 @@ def score_special_habitat_overlap(special_habitat_overlap_ha: float) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "special_habitat_overlap",
+                "reason": "No special habitat overlap found on parcel.",
+                "value": round(special_habitat_overlap_ha, 3),
+                "unit": "ha",
+            },
         }
 
     return {
@@ -259,6 +271,7 @@ def score_special_habitat_overlap(special_habitat_overlap_ha: float) -> dict:
             "value": round(special_habitat_overlap_ha, 3),
             "unit": "ha",
         },
+        "no_points_evidence": None,
     }
 
 
@@ -273,6 +286,15 @@ def score_special_habitat_diversity(special_habitat_count: int) -> dict:
         return {
             "points": 0,
             "evidence": None,
+            "no_points_evidence": {
+                "indicator": "special_habitat_diversity",
+                "reason": (
+                    f"Parcel touches fewer than 5 distinct special habitat areas "
+                    f"({special_habitat_count} found)."
+                ),
+                "value": special_habitat_count,
+                "unit": "areas",
+            },
         }
 
     return {
@@ -284,4 +306,56 @@ def score_special_habitat_diversity(special_habitat_count: int) -> dict:
             "value": special_habitat_count,
             "unit": "areas",
         },
+        "no_points_evidence": None,
+    }
+
+
+def score_indicators(indicators: dict) -> dict:
+    total_score = 0
+    evidence = []
+    no_points_evidence = []
+
+    def record(result: dict) -> None:
+        total_score_delta = result["points"]
+        nonlocal total_score
+        total_score += total_score_delta
+
+        if result["evidence"] is not None:
+            evidence.append(result["evidence"])
+        if result["no_points_evidence"] is not None:
+            no_points_evidence.append(result["no_points_evidence"])
+
+    natura_overlap_ha = indicators.get("natura_overlap_ha", 0)
+    nearest_natura_distance_m = indicators.get("nearest_natura_distance_m")
+
+    # 1) Natura overlap always checked first
+    record(score_natura_overlap(natura_overlap_ha))
+
+    # 2) Natura distance only if parcel does NOT overlap Natura
+    if natura_overlap_ha <= 0:
+        record(score_natura_distance(nearest_natura_distance_m))
+
+    # 3) Forest stand indicators, independent of Natura proximity
+    for result in [
+        score_forest_age(indicators.get("max_mean_age")),
+        score_natural_mire(indicators.get("has_natural_mire", False)),
+        score_uneven_aged_structure(indicators.get("has_uneven_aged_structure", False)),
+        score_special_feature(indicators.get("has_special_feature", False)),
+    ]:
+        record(result)
+
+    # 4) Special habitat indicators, independent of everything else
+    for result in [
+        score_special_habitat_overlap(indicators.get("special_habitat_overlap_ha", 0)),
+        score_special_habitat_diversity(indicators.get("special_habitat_count", 0)),
+    ]:
+        record(result)
+
+    scaled_score = round(total_score / MAX_RAW_SCORE * 100, 1)
+
+    return {
+        "score_total": scaled_score,
+        "score_class": classify_score(scaled_score),
+        "evidence": evidence,
+        "no_points_evidence": no_points_evidence,
     }

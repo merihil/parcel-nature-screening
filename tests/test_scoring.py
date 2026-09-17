@@ -9,7 +9,7 @@ def test_natura_overlap_gets_points():
 
     result = score_indicators(indicators)
 
-    assert result["score_total"] == 30
+    assert result["score_total"] == 23.1
     assert result["score_class"] == "low"
     assert len(result["evidence"]) == 1
     assert result["evidence"][0]["indicator"] == "natura_overlap"
@@ -23,7 +23,7 @@ def test_natura_distance_gets_points_when_no_overlap():
 
     result = score_indicators(indicators)
 
-    assert result["score_total"] == 15
+    assert result["score_total"] == 11.5
     assert len(result["evidence"]) == 1
     assert result["evidence"][0]["indicator"] == "natura_distance"
 
@@ -38,7 +38,7 @@ def test_no_double_points_when_parcel_overlaps_natura():
 
     indicators_in_evidence = [item["indicator"] for item in result["evidence"]]
 
-    assert result["score_total"] == 30
+    assert result["score_total"] == 23.1
     assert "natura_overlap" in indicators_in_evidence
     assert "natura_distance" not in indicators_in_evidence
 
@@ -66,3 +66,23 @@ def test_missing_distance_does_not_crash():
 
     assert result["score_total"] == 0
     assert result["evidence"] == []
+
+
+def test_no_points_evidence_explains_unscored_indicators():
+    indicators = {
+        "natura_overlap_ha": 0,
+        "nearest_natura_distance_m": 10000,
+    }
+
+    result = score_indicators(indicators)
+
+    no_points_indicators = [item["indicator"] for item in result["no_points_evidence"]]
+
+    assert "natura_distance" in no_points_indicators
+    assert "forest_age" in no_points_indicators
+    assert "natural_mire" in no_points_indicators
+    assert "uneven_aged_structure" in no_points_indicators
+    assert "special_feature" in no_points_indicators
+    assert "special_habitat_overlap" in no_points_indicators
+    assert "special_habitat_diversity" in no_points_indicators
+    assert all(item["reason"] for item in result["no_points_evidence"])

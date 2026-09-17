@@ -27,6 +27,7 @@ def analyze_parcel(property_id: str) -> dict | None:
         },
         "indicators": indicators,
         "evidence": scoring["evidence"],
+        "no_points_evidence": scoring["no_points_evidence"],
         "disclaimer": (
             "This is a preliminary geospatial screening result. "
             "It does not replace field surveys, official conservation assessments "

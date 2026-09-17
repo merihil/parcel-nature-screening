@@ -15,6 +15,9 @@
   th, td { text-align: left; padding: 0.4rem; border-bottom: 1px solid #ddd; }
   .score-box { padding: 1rem; border-radius: 6px; background: #f0f4f0; margin-bottom: 1rem; }
   .score-box .score { font-size: 2rem; font-weight: bold; }
+  h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+  ul.no-points { padding-left: 1.2rem; color: #555; }
+  ul.no-points li { margin-bottom: 0.3rem; }
 </style>
 </head>
 <body>
@@ -74,9 +77,13 @@ function renderResult(data) {
     )
     .join("");
 
+  const noPointsItems = (data.no_points_evidence || [])
+    .map((e) => `<li>${e.reason}</li>`)
+    .join("");
+
   return `
     <div class="score-box">
-      <div class="score">${data.biodiversity_potential.score} — ${data.biodiversity_potential.class}</div>
+      <div class="score">${data.biodiversity_potential.score} / 100 — ${data.biodiversity_potential.class}</div>
       <div>${data.parcel.area_ha} ha · municipality ${data.parcel.municipality_code}</div>
     </div>
     <table>
@@ -85,6 +92,11 @@ function renderResult(data) {
       </thead>
       <tbody>${evidenceRows || "<tr><td colspan=4>No scoring evidence.</td></tr>"}</tbody>
     </table>
+    ${
+      noPointsItems
+        ? `<h2>No points from</h2><ul class="no-points">${noPointsItems}</ul>`
+        : ""
+    }
     <p><em>${data.disclaimer}</em></p>
   `;
 }

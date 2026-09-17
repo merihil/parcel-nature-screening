@@ -10,6 +10,8 @@ natural mire, uneven-aged forest structure, and flagged special habitat features
 indicators planned. It is a learning/portfolio project, not an official conservation assessment
 tool.
 
+![Parcel Nature Screening UI showing a score, scoring evidence and reasons no points were given](docs/PNS_example.png)
+
 ## Tech stack
 
 Python · GeoPandas · PostGIS · PostgreSQL · SQLAlchemy · FastAPI · WFS APIs (MML, SYKE,
