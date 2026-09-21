@@ -1,8 +1,13 @@
 # Highest raw point total any parcel can reach (all indicators triggered,
 # Natura overlap taking the 30-point branch instead of natura_distance):
-# 30 + 20 + 15 + 15 + 20 + 20 + 10 = 130. score_indicators() divides by this
-# to express score_total on a 0-100 scale.
+# 30 + 20 + 15 + 15 + 20 + 20 + 10 = 130. Every indicator's points are scaled
+# by this so both the per-indicator points and score_total sit on a 0-100
+# scale, and the displayed per-indicator points always sum to score_total.
 MAX_RAW_SCORE = 130
+
+
+def scale_points(raw_points: int) -> float:
+    return round(raw_points * 100 / MAX_RAW_SCORE, 1)
 
 
 def classify_score(score: float) -> str:
@@ -18,11 +23,12 @@ def classify_score(score: float) -> str:
 
 def score_natura_overlap(natura_overlap_ha: float) -> dict:
     if natura_overlap_ha > 0:
+        points = scale_points(30)
         return {
-            "points": 30,
+            "points": points,
             "evidence": {
                 "indicator": "natura_overlap",
-                "points": 30,
+                "points": points,
                 "reason": "Parcel intersects a Natura 2000 area.",
                 "value": round(natura_overlap_ha, 3),
                 "unit": "ha",
@@ -59,22 +65,22 @@ def score_natura_distance(nearest_natura_distance_m: float | None) -> dict:
         }
 
     if nearest_natura_distance_m == 0:
-        points = 20
+        raw_points = 20
         reason = "Parcel intersects a Natura 2000 area."
     elif nearest_natura_distance_m <= 250:
-        points = 15
+        raw_points = 15
         reason = "Parcel is very close to a Natura 2000 area."
     elif nearest_natura_distance_m <= 1000:
-        points = 8
+        raw_points = 8
         reason = "Parcel is within 1 km of a Natura 2000 area."
     elif nearest_natura_distance_m <= 5000:
-        points = 3
+        raw_points = 3
         reason = "Parcel is within 5 km of a Natura 2000 area."
     else:
-        points = 0
+        raw_points = 0
         reason = None
 
-    if points == 0:
+    if raw_points == 0:
         return {
             "points": 0,
             "evidence": None,
@@ -85,6 +91,8 @@ def score_natura_distance(nearest_natura_distance_m: float | None) -> dict:
                 "unit": "m",
             },
         }
+
+    points = scale_points(raw_points)
 
     return {
         "points": points,
@@ -118,10 +126,10 @@ def score_forest_age(max_mean_age: int | None) -> dict:
         }
 
     if max_mean_age > 100:
-        points = 20
+        raw_points = 20
         reason = "Parcel contains forest stand(s) older than 100 years."
     elif max_mean_age >= 60:
-        points = 10
+        raw_points = 10
         reason = "Parcel contains forest stand(s) 60-100 years old."
     else:
         return {
@@ -134,6 +142,8 @@ def score_forest_age(max_mean_age: int | None) -> dict:
                 "unit": "years",
             },
         }
+
+    points = scale_points(raw_points)
 
     return {
         "points": points,
@@ -162,11 +172,13 @@ def score_natural_mire(has_natural_mire: bool) -> dict:
             },
         }
 
+    points = scale_points(15)
+
     return {
-        "points": 15,
+        "points": points,
         "evidence": {
             "indicator": "natural_mire",
-            "points": 15,
+            "points": points,
             "reason": "Parcel contains an undrained natural mire (Luonnontilainen suo).",
             "value": True,
             "unit": None,
@@ -196,11 +208,13 @@ def score_uneven_aged_structure(has_uneven_aged_structure: bool) -> dict:
             },
         }
 
+    points = scale_points(15)
+
     return {
-        "points": 15,
+        "points": points,
         "evidence": {
             "indicator": "uneven_aged_structure",
-            "points": 15,
+            "points": points,
             "reason": "Parcel contains an uneven-aged stand (Eri-ikäisrakenteinen metsikkö).",
             "value": True,
             "unit": None,
@@ -223,11 +237,13 @@ def score_special_feature(has_special_feature: bool) -> dict:
             },
         }
 
+    points = scale_points(20)
+
     return {
-        "points": 20,
+        "points": points,
         "evidence": {
             "indicator": "special_feature",
-            "points": 20,
+            "points": points,
             "reason": "Parcel contains a stand with a flagged special habitat feature.",
             "value": True,
             "unit": None,
@@ -242,13 +258,13 @@ def score_special_habitat_overlap(special_habitat_overlap_ha: float) -> dict:
     """
 
     if special_habitat_overlap_ha > 5:
-        points = 20
+        raw_points = 20
         reason = "Parcel has substantial special habitat overlap (over 5 ha)."
     elif special_habitat_overlap_ha > 1:
-        points = 12
+        raw_points = 12
         reason = "Parcel has notable special habitat overlap (over 1 ha)."
     elif special_habitat_overlap_ha > 0.01:
-        points = 5
+        raw_points = 5
         reason = "Parcel has minor special habitat overlap."
     else:
         return {
@@ -261,6 +277,8 @@ def score_special_habitat_overlap(special_habitat_overlap_ha: float) -> dict:
                 "unit": "ha",
             },
         }
+
+    points = scale_points(raw_points)
 
     return {
         "points": points,
@@ -297,11 +315,13 @@ def score_special_habitat_diversity(special_habitat_count: int) -> dict:
             },
         }
 
+    points = scale_points(10)
+
     return {
-        "points": 10,
+        "points": points,
         "evidence": {
             "indicator": "special_habitat_diversity",
-            "points": 10,
+            "points": points,
             "reason": f"Parcel touches {special_habitat_count} separate special habitat areas.",
             "value": special_habitat_count,
             "unit": "areas",
@@ -316,9 +336,8 @@ def score_indicators(indicators: dict) -> dict:
     no_points_evidence = []
 
     def record(result: dict) -> None:
-        total_score_delta = result["points"]
         nonlocal total_score
-        total_score += total_score_delta
+        total_score += result["points"]
 
         if result["evidence"] is not None:
             evidence.append(result["evidence"])
@@ -351,11 +370,13 @@ def score_indicators(indicators: dict) -> dict:
     ]:
         record(result)
 
-    scaled_score = round(total_score / MAX_RAW_SCORE * 100, 1)
+    # total_score is already a sum of numbers rounded to 1 decimal each;
+    # round again to clean up any binary-float drift (e.g. 23.1 + 11.5).
+    score_total = round(total_score, 1)
 
     return {
-        "score_total": scaled_score,
-        "score_class": classify_score(scaled_score),
+        "score_total": score_total,
+        "score_class": classify_score(score_total),
         "evidence": evidence,
         "no_points_evidence": no_points_evidence,
     }

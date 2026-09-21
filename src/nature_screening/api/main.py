@@ -10,6 +10,7 @@ from nature_screening.etl.ensure_coverage import (
     ensure_parcel_exists,
     ensure_special_habitat_coverage,
 )
+from nature_screening.etl.import_parcels import normalize_property_id
 
 app = FastAPI(title="Parcel Nature Screening API")
 
@@ -19,9 +20,18 @@ def health_check():
     return {"status": "ok"}
 
 
+def _parse_property_id(raw: str) -> str:
+    property_id = normalize_property_id(raw)
+
+    if property_id is None:
+        raise HTTPException(status_code=400, detail=f"Invalid property identifier: {raw}")
+
+    return property_id
+
+
 @app.get("/parcels/{property_id}")
 def get_parcel(property_id: str):
-    parcel = get_parcel_by_property_id(property_id)
+    parcel = get_parcel_by_property_id(_parse_property_id(property_id))
 
     if parcel is None:
         raise HTTPException(status_code=404, detail="Parcel not found")
@@ -31,6 +41,7 @@ def get_parcel(property_id: str):
 
 @app.get("/parcels/{property_id}/analysis")
 def get_parcel_analysis(property_id: str):
+    property_id = _parse_property_id(property_id)
     ensure_parcel_exists(property_id)
 
     parcel = get_parcel_by_property_id(property_id)
