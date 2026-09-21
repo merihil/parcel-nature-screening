@@ -68,6 +68,23 @@ def test_missing_distance_does_not_crash():
     assert result["evidence"] == []
 
 
+def test_evidence_points_sum_to_score_total():
+    indicators = {
+        "natura_overlap_ha": 0,
+        "nearest_natura_distance_m": 200,
+        "max_mean_age": 120,
+        "has_natural_mire": True,
+        "has_uneven_aged_structure": True,
+        "has_special_feature": True,
+        "special_habitat_overlap_ha": 6,
+        "special_habitat_count": 5,
+    }
+
+    result = score_indicators(indicators)
+
+    assert round(sum(item["points"] for item in result["evidence"]), 1) == result["score_total"]
+
+
 def test_no_points_evidence_explains_unscored_indicators():
     indicators = {
         "natura_overlap_ha": 0,
