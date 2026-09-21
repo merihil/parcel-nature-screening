@@ -1,6 +1,6 @@
 # Parcel Nature Screening
 
-A GIS backend that evaluates environmental conservation value for cadastral parcels in Finland by combining several
+A GIS backend that evaluates environmental conservation value for cadastral parcels (kiinteistöpalsta) in Finland by combining several
 spatial datasets, Natura 2000 protected areas, forest stand data, and cadastral parcel boundaries into a single
 biodiversity-potential screening result.
 
@@ -92,6 +92,8 @@ docker compose exec -T db psql -U nature -d naturedb < sql/004_forest_stand_feat
 docker compose exec -T db psql -U nature -d naturedb < sql/005_forest_stand_fetch_log.sql
 docker compose exec -T db psql -U nature -d naturedb < sql/006_parcels_unique_property_id.sql
 docker compose exec -T db psql -U nature -d naturedb < sql/007_special_habitat_features.sql
+docker compose exec -T db psql -U nature -d naturedb < sql/008_special_habitat_fetch_log.sql
+docker compose exec -T db psql -U nature -d naturedb < sql/009_backfill_nan_numeric_columns.sql
 ```
 
 Import the Natura 2000 dataset (small, always imported in full):

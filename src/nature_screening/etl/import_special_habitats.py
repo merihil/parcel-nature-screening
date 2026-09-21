@@ -15,9 +15,20 @@ SOURCE_NAME = "metsakeskus_special_habitats"
 
 
 def optional_column(gdf: gpd.GeoDataFrame, column: str):
-    if column in gdf.columns:
-        return gdf[column]
-    return None
+    """
+    WFS numeric fields come back as pandas float64 with NaN standing in for
+    "no value" — written as-is, NaN lands in Postgres as a literal float NaN,
+    not NULL. That breaks any `IS NOT NULL` check (NaN passes it) and can
+    overflow BIGINT columns entirely, so missing values are normalized to
+    None here, before they ever reach the database.
+    """
+
+    if column not in gdf.columns:
+        return None
+
+    # astype(object) first: a float64 Series can't hold Python None, so
+    # .where(..., None) on the raw column would just put NaN right back.
+    return gdf[column].astype(object).where(gdf[column].notna(), None)
 
 
 def normalize_special_habitat_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:

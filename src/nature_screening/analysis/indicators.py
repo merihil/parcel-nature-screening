@@ -94,6 +94,11 @@ def get_forest_stand_summary(property_id: str) -> dict:
     Uses MAX/BOOL_OR rather than area-weighted aggregation: this reports
     whether the parcel contains *any* stand meeting each condition, not a
     weighted average across its area.
+
+    special_feature IS NOT NULL is also guarded against a literal float NaN
+    (`= 'NaN'`), which import_forest_stands.py used to write for "no value"
+    before its optional_column() fix — IS NOT NULL alone is true for NaN,
+    since NaN is a value, not SQL NULL.
     """
 
     query = text("""
@@ -101,7 +106,7 @@ def get_forest_stand_summary(property_id: str) -> dict:
             MAX(fs.mean_age) AS max_mean_age,
             BOOL_OR(fs.drainage_state = 6) AS has_natural_mire,
             BOOL_OR(fs.development_class = 'ER') AS has_uneven_aged_structure,
-            BOOL_OR(fs.special_feature IS NOT NULL) AS has_special_feature
+            BOOL_OR(fs.special_feature IS NOT NULL AND fs.special_feature != 'NaN'::float8) AS has_special_feature
         FROM core.parcels p
         JOIN core.forest_stand_features fs
         ON ST_Intersects(p.geom, fs.geom)

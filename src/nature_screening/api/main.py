@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
 from nature_screening.analysis.analysis import analyze_parcel
+from nature_screening.analysis.map_layers import get_parcel_map_data
 from nature_screening.analysis.parcel_lookup import get_parcel_by_property_id
 from nature_screening.etl.ensure_coverage import (
     ensure_forest_stand_coverage,
@@ -53,6 +54,21 @@ def get_parcel_analysis(property_id: str):
     ensure_special_habitat_coverage(property_id)
 
     return analyze_parcel(property_id)
+
+
+@app.get("/parcels/{property_id}/map")
+def get_parcel_map(property_id: str):
+    property_id = _parse_property_id(property_id)
+    ensure_parcel_exists(property_id)
+    ensure_forest_stand_coverage(property_id)
+    ensure_special_habitat_coverage(property_id)
+
+    map_data = get_parcel_map_data(property_id)
+
+    if map_data is None:
+        raise HTTPException(status_code=404, detail="Parcel not found")
+
+    return map_data
 
 
 # Mounted last so it never shadows the API routes above — Starlette matches

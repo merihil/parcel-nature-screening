@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <title>Parcel Nature Screening</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
   h1 { font-size: 1.4rem; }
@@ -20,6 +24,10 @@
   h2 { font-size: 1.1rem; margin-top: 1.5rem; }
   ul.no-points { padding-left: 1.2rem; color: #555; }
   ul.no-points li { margin-bottom: 0.3rem; }
+  #map { height: 400px; border-radius: 6px; margin-bottom: 0.5rem; display: none; }
+  #legend { display: none; flex-wrap: wrap; gap: 0.6rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; }
+  #legend .item { display: flex; align-items: center; gap: 0.4rem; }
+  #legend .swatch { width: 0.9rem; height: 0.9rem; border-radius: 2px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -33,6 +41,8 @@
 
 <p id="status"></p>
 <p id="error"></p>
+<div id="map"></div>
+<div id="legend"></div>
 <div id="result"></div>
 
 <script>
@@ -40,6 +50,9 @@ const form = document.getElementById("lookup-form");
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
 const resultEl = document.getElementById("result");
+
+let map;
+let mapLayers = [];
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -60,11 +73,172 @@ form.addEventListener("submit", async (event) => {
     const data = await response.json();
     statusEl.textContent = "";
     resultEl.innerHTML = renderResult(data);
+
+    // Non-fatal: the analysis result is already shown, so a map failure
+    // shouldn't hide it or surface as the user-facing error.
+    try {
+      const mapResponse = await fetch(`/parcels/${encodeURIComponent(propertyId)}/map`);
+      if (mapResponse.ok) {
+        renderMap(await mapResponse.json());
+      }
+    } catch (mapErr) {
+      console.error("Failed to load map data", mapErr);
+    }
   } catch (err) {
     statusEl.textContent = "";
     errorEl.textContent = err.message;
   }
 });
+
+// Order matters: first matching condition wins when a stand qualifies for
+// more than one reason, so it's listed roughly by scoring.py's own point
+// values (score_forest_age's 20 / score_special_feature's 20 down to
+// score_forest_age's 10 for a merely mature stand).
+const FOREST_STAND_REASONS = [
+  {
+    key: "old_forest",
+    matches: (p) => p.age_tier === "old",
+    label: "Forest older than 100 years",
+    color: "#4e342e",
+    fillColor: "#6d4c41",
+  },
+  {
+    key: "special_feature",
+    matches: (p) => p.has_special_feature,
+    label: "Special habitat feature",
+    color: "#e65100",
+    fillColor: "#ff9800",
+  },
+  {
+    key: "natural_mire",
+    matches: (p) => p.is_natural_mire,
+    label: "Natural mire",
+    color: "#00695c",
+    fillColor: "#26a69a",
+  },
+  {
+    key: "uneven_aged",
+    matches: (p) => p.development_class === "ER",
+    label: "Uneven-aged structure",
+    color: "#827717",
+    fillColor: "#c0ca33",
+  },
+  {
+    key: "mature_forest",
+    matches: (p) => p.age_tier === "mid",
+    label: "Forest 60-100 years old",
+    color: "#795548",
+    fillColor: "#a1887f",
+  },
+];
+
+function forestStandReasons(properties) {
+  return FOREST_STAND_REASONS.filter((r) => r.matches(properties)).map((r) =>
+    r.key === "special_feature" && properties.special_feature_label
+      ? `${r.label}: ${properties.special_feature_label}`
+      : r.label
+  );
+}
+
+function forestStandStyle(properties) {
+  const primary = FOREST_STAND_REASONS.find((r) => r.matches(properties));
+  return {
+    color: primary.color,
+    weight: 1,
+    fillColor: primary.fillColor,
+    fillOpacity: 0.4,
+  };
+}
+
+const MAP_LEGEND_ITEMS = [
+  { label: "Parcel boundary", color: "#c62828", outline: true },
+  { label: "Natura 2000 (overlapping)", color: "#66bb6a" },
+  { label: "Natura 2000 (nearby)", color: "#66bb6a", dashed: true },
+  ...FOREST_STAND_REASONS.map((r) => ({ label: r.label, color: r.fillColor })),
+  { label: "Special habitat", color: "#ab47bc" },
+];
+
+function renderLegend() {
+  const legendEl = document.getElementById("legend");
+  legendEl.style.display = "flex";
+  legendEl.innerHTML = MAP_LEGEND_ITEMS.map(
+    (item) => `
+      <span class="item">
+        <span class="swatch" style="background:${item.color};${
+      item.outline
+        ? `background:transparent;border:2px solid ${item.color};`
+        : item.dashed
+        ? "border:1px dashed #333;background:transparent;"
+        : ""
+    }"></span>
+        ${item.label}
+      </span>`
+  ).join("");
+}
+
+function renderMap(mapData) {
+  const mapEl = document.getElementById("map");
+  mapEl.style.display = "block";
+  renderLegend();
+
+  if (!map) {
+    map = L.map("map");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 19,
+    }).addTo(map);
+  }
+
+  mapLayers.forEach((layer) => map.removeLayer(layer));
+  mapLayers = [];
+
+  const parcelLayer = L.geoJSON(mapData.parcel, {
+    style: { color: "#c62828", weight: 3, fillOpacity: 0 },
+  }).addTo(map);
+
+  const naturaLayer = L.geoJSON(mapData.layers.natura, {
+    style: (feature) => ({
+      color: "#2e7d32",
+      weight: 1,
+      fillColor: "#66bb6a",
+      fillOpacity: feature.properties.overlaps ? 0.4 : 0.1,
+      dashArray: feature.properties.overlaps ? null : "6 4",
+    }),
+    onEachFeature: (feature, layer) => {
+      const p = feature.properties;
+      layer.bindPopup(
+        `<strong>${p.name || "Natura area"}</strong><br>${p.subtype ?? ""}` +
+          (p.overlaps ? "" : "<br><em>Nearby, not overlapping</em>")
+      );
+    },
+  }).addTo(map);
+
+  const forestStandLayer = L.geoJSON(mapData.layers.forest_stands, {
+    style: (feature) => forestStandStyle(feature.properties),
+    onEachFeature: (feature, layer) => {
+      const p = feature.properties;
+      const reasons = forestStandReasons(p);
+      layer.bindPopup(`Forest stand<br>${reasons.join("<br>")}`);
+    },
+  }).addTo(map);
+
+  const specialHabitatLayer = L.geoJSON(mapData.layers.special_habitats, {
+    style: { color: "#6a1b9a", weight: 1, fillColor: "#ab47bc", fillOpacity: 0.4 },
+    onEachFeature: (feature, layer) => {
+      const p = feature.properties;
+      layer.bindPopup(
+        `<strong>${p.special_feature_label ?? "Special habitat"}</strong><br>` +
+          `Development class: ${p.development_class_label ?? "?"}` +
+          (p.cutting_restriction_label ? `<br>${p.cutting_restriction_label}` : "") +
+          (p.silviculture_restriction_label ? `<br>${p.silviculture_restriction_label}` : "")
+      );
+    },
+  }).addTo(map);
+
+  mapLayers = [parcelLayer, naturaLayer, forestStandLayer, specialHabitatLayer];
+
+  map.fitBounds(parcelLayer.getBounds(), { maxZoom: 17 });
+}
 
 function renderResult(data) {
   const evidenceRows = data.evidence

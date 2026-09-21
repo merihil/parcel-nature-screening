@@ -32,8 +32,8 @@
 ## Phase 4 – Frontend
 
 
-- Simple web UI
-- Map view showing the parcel's own geometry alongside whatever it overlaps or is near
+- Simple web UI ✅ 
+- Map view showing the parcel's own geometry alongside whatever it overlaps or is near ✅ 
 
 ---
 
