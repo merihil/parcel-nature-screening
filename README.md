@@ -69,9 +69,8 @@ request access).
 docker compose up -d
 ```
 
-This starts PostgreSQL/PostGIS and pgAdmin, and applies `sql/001` through `sql/007` on first
-run (fresh database volume only — see below if you're applying a new migration to an existing
-database).
+This starts PostgreSQL/PostGIS and pgAdmin. The database starts empty; the next step sets up
+the schema.
 
 ### 4. Install the package
 
@@ -81,20 +80,15 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-### 5. Import some data
-
-Migrations under `docker-entrypoint-initdb.d` only run once, when the database volume is first
-created. If your database already existed before a new file was added to `sql/`, apply it by
-hand:
+### 5. Apply database migrations
 
 ```bash
-docker compose exec -T db psql -U nature -d naturedb < sql/004_forest_stand_features.sql
-docker compose exec -T db psql -U nature -d naturedb < sql/005_forest_stand_fetch_log.sql
-docker compose exec -T db psql -U nature -d naturedb < sql/006_parcels_unique_property_id.sql
-docker compose exec -T db psql -U nature -d naturedb < sql/007_special_habitat_features.sql
-docker compose exec -T db psql -U nature -d naturedb < sql/008_special_habitat_fetch_log.sql
-docker compose exec -T db psql -U nature -d naturedb < sql/009_backfill_nan_numeric_columns.sql
+alembic upgrade head
 ```
+
+Sets up the schema. Safe to run again — it just skips what's already applied.
+
+### 6. Import some data
 
 Import the Natura 2000 dataset (small, always imported in full):
 
@@ -111,7 +105,7 @@ hand if you want:
 python -m nature_screening.etl.import_parcels --property-id 091-403-0063-0091
 ```
 
-### 6. Run the API
+### 7. Run the API
 
 ```bash
 uvicorn nature_screening.api.main:app --reload
@@ -121,6 +115,19 @@ Open `http://localhost:8000/docs` for interactive Swagger UI, or:
 
 ```bash
 curl http://localhost:8000/parcels/091-403-0063-0091/analysis
+```
+
+## Testing
+
+```bash
+pytest
+```
+
+Runs the unit tests, no database needed. Tests that need PostGIS are marked
+`@pytest.mark.integration` and skipped by default. With the database up, run them too:
+
+```bash
+pytest -m integration
 ```
 
 ## Project structure
@@ -133,9 +140,10 @@ src/nature_screening/
     etl/             one importer per data source, plus on-demand coverage fetch
     analysis/        indicators and scoring for a given parcel
     api/             FastAPI routes
-sql/                 database schema, applied in order
+alembic/             database migrations
+sql/                 schema files, applied by the baseline migration
 docs/                architecture notes, data sources, ADRs, learning notes, roadmap
-tests/
+tests/               unit tests, plus tests/integration/ (needs PostGIS)
 ```
 
 ## License
