@@ -20,7 +20,8 @@ dependencies = [
     "pyogrio",
     "requests",
     "pandas",
-    "geoalchemy2"
+    "geoalchemy2",
+    "alembic"
 ]
 
 [project.optional-dependencies]
@@ -30,6 +31,14 @@ dev = [
     "black",
     "ipykernel"
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: requires a running PostGIS database (docker compose up -d db)",
+]
+# Excluded by default so plain `pytest` works without Docker running;
+# `pytest -m integration` runs them explicitly.
+addopts = "-m 'not integration'"
 
 [tool.ruff]
 line-length = 100
