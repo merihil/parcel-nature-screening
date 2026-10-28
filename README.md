@@ -1,5 +1,7 @@
 # Parcel Nature Screening
 
+[![CI](https://github.com/merihil/parcel-nature-screening/actions/workflows/ci.yml/badge.svg)](https://github.com/merihil/parcel-nature-screening/actions/workflows/ci.yml)
+
 A GIS backend that evaluates environmental conservation value for cadastral parcels (kiinteistöpalsta) in Finland by combining several
 spatial datasets, Natura 2000 protected areas, forest stand data, and cadastral parcel boundaries into a single
 biodiversity-potential screening result.

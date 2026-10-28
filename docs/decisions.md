@@ -59,3 +59,39 @@ append, backed by a unique index on `(source_name, source_identifier)`.
 - The on-demand fetch runs synchronously inside the API request. The first request for a new
   area can take several seconds to tens of seconds (WFS pagination + write), and a WFS failure
   surfaces as a raw 500.
+
+## ADR-003 – Alembic for schema migrations
+
+**Problem**
+
+Schema changes lived as numbered files in `sql/` (001-009), applied either by Postgres's
+`docker-entrypoint-initdb.d` on first container start, or by hand with `psql` for databases
+that already existed. Nothing tracked which files a given database had already applied and 
+keeping an existing database in sync meant remembering and running the right commands from
+the README.
+
+**Decision**
+
+Use Alembic to track and apply schema changes. `sql/001` through `sql/009` are squashed into
+one baseline revision that applies them in order; future schema changes are new Alembic
+revisions. `alembic upgrade head` is now the one command to bring any database up to date, and
+it's safe to run again on a database that's already current.
+
+**Alternatives considered**
+
+- A small hand-written migration runner: a script reading `sql/*.sql` in order and tracking
+  applied filenames in a table. No new dependency, but a custom tool is less recognizable than
+  a standard one, and the project already depends on SQLAlchemy, which Alembic builds on.
+
+**Why this solution**
+
+- No ORM models are used here, but Alembic doesn't require them, migrations run plain SQL,
+  same as the old `sql/*.sql` files did.
+- `alembic stamp head` marks an existing database current without re-running already-applied
+  SQL.
+- A standard, widely recognized tool in the Python/SQLAlchemy ecosystem.
+
+**Known limitations, not yet addressed**
+
+- Alembic manages only the base schema (tables, indexes, fetch logs). A planned dbt layer for
+  analysis will be a separate tool.
