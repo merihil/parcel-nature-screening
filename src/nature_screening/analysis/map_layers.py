@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 
 from sqlalchemy import text
@@ -19,7 +20,7 @@ def _is_missing_code(code) -> bool:
     # NaN can end up here from rows written before optional_column()'s NaN
     # normalization (see import_forest_stands.py) — treat it as "no value",
     # same as None, rather than a code we just don't have a label for.
-    return code is None or (isinstance(code, float) and code != code)
+    return code is None or (isinstance(code, float) and math.isnan(code))
 
 
 def _code_label(field: str, code) -> str | None:

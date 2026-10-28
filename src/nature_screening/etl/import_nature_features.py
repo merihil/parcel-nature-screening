@@ -3,8 +3,8 @@ import pandas as pd
 
 from nature_screening.config import settings
 from nature_screening.db.write import delete_source_rows, write_gdf_to_postgis
-from nature_screening.geo.wfs import fetch_wfs_layer
 from nature_screening.geo.normalize import ensure_valid_multipolygons, pick_column
+from nature_screening.geo.wfs import fetch_wfs_layer
 
 # Importing Natura 2000 features
 

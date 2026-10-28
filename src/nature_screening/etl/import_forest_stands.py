@@ -8,8 +8,8 @@ from nature_screening.config import settings
 from nature_screening.db.write import delete_source_rows, upsert_gdf_to_postgis
 from nature_screening.etl.cli import add_aoi_arguments
 from nature_screening.geo.aoi import resolve_aoi
-from nature_screening.geo.wfs import fetch_wfs_layer
 from nature_screening.geo.normalize import ensure_valid_multipolygons
+from nature_screening.geo.wfs import fetch_wfs_layer
 
 SOURCE_NAME = "metsakeskus_forest_stands"
 

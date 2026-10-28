@@ -331,7 +331,7 @@ def score_special_habitat_diversity(special_habitat_count: int) -> dict:
 
 
 def score_indicators(indicators: dict) -> dict:
-    total_score = 0
+    total_score: float = 0
     evidence = []
     no_points_evidence = []
 
